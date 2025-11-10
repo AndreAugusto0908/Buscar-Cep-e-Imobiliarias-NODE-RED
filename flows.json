@@ -1,0 +1,387 @@
+[
+    {
+        "id": "27776b7daebce711",
+        "type": "tab",
+        "label": "Fluxo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "http_in_corretoras",
+        "type": "http in",
+        "z": "27776b7daebce711",
+        "name": "GET /corretoras",
+        "url": "/corretoras",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 200,
+        "y": 420,
+        "wires": [
+            [
+                "http_request_api"
+            ]
+        ]
+    },
+    {
+        "id": "http_request_api",
+        "type": "http request",
+        "z": "27776b7daebce711",
+        "name": "BrazilAPI Corretoras",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://brasilapi.com.br/api/cvm/corretoras/v1",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 440,
+        "y": 420,
+        "wires": [
+            [
+                "function_format"
+            ]
+        ]
+    },
+    {
+        "id": "function_format",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Formatar para JSON",
+        "func": "const corretoras = msg.payload;\n\nconst formatadas = corretoras.map(c => {\n    const nome = c.nome_social || c.nome_comercial || 'Nome não disponível';\n    const cidade = c.municipio || 'Cidade não disponível';\n    const cnpj = c.cnpj || 'CNPJ não disponível';\n    \n    return {\n        cnpj: cnpj,\n        formato_completo: `${nome} - ${cidade} / ${cnpj}`\n    };\n});\n\nmsg.payload = {\n    total: formatadas.length,\n    corretoras: formatadas\n};\n\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "\n",
+        "finalize": "\n",
+        "libs": [],
+        "x": 710,
+        "y": 420,
+        "wires": [
+            [
+                "http_response"
+            ]
+        ]
+    },
+    {
+        "id": "http_response",
+        "type": "http response",
+        "z": "27776b7daebce711",
+        "name": "JSON Response",
+        "statusCode": "200",
+        "headers": {},
+        "x": 940,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "http_in_corretora_cnpj",
+        "type": "http in",
+        "z": "27776b7daebce711",
+        "name": "GET /corretora/:cnpj",
+        "url": "/corretora/:cnpj",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 210,
+        "y": 460,
+        "wires": [
+            [
+                "function_preparar_url"
+            ]
+        ]
+    },
+    {
+        "id": "function_preparar_url",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Preparar URL",
+        "func": "const cnpj = msg.req.params.cnpj;\n\nmsg.url = `https://brasilapi.com.br/api/cvm/corretoras/v1/${cnpj}`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "\n",
+        "finalize": "\n",
+        "libs": [],
+        "x": 430,
+        "y": 460,
+        "wires": [
+            [
+                "http_request_api_cnpj"
+            ]
+        ]
+    },
+    {
+        "id": "http_request_api_cnpj",
+        "type": "http request",
+        "z": "27776b7daebce711",
+        "name": "BrazilAPI Corretora por CNPJ",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 690,
+        "y": 460,
+        "wires": [
+            [
+                "function_formatar_resposta"
+            ]
+        ]
+    },
+    {
+        "id": "function_formatar_resposta",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Formatar Resposta",
+        "func": "\nif (msg.statusCode !== 200) {\n    msg.payload = {\n        error: 'Corretora não encontrada',\n        cnpj_buscado: msg.req.params.cnpj\n    };\n    msg.statusCode = 404;\n} else {\n    const c = msg.payload;\n    \n    msg.payload = {\n        formato_completo: `${c.nome_social || c.nome_comercial} - ${c.municipio} / ${c.cnpj}`,\n        nome: c.nome_social || c.nome_comercial,\n        cidade: c.municipio,\n        cnpj: c.cnpj,\n        bairro: c.bairro,\n        cep: c.cep,\n        codigo_cvm: c.codigo_cvm,\n        complemento: c.complemento,\n        data_inicio_situacao: c.data_inicio_situacao,\n        data_patrimonio_liquido: c.data_patrimonio_liquido,\n        data_registro: c.data_registro,\n        email: c.email,\n        logradouro: c.logradouro,\n        municipio: c.municipio,\n        nome_social: c.nome_social,\n        nome_comercial: c.nome_comercial,\n        pais: c.pais,\n        status: c.status,\n        telefone: c.telefone,\n        type: c.type,\n        uf: c.uf,\n        valor_patrimonio_liquido: c.valor_patrimonio_liquido\n    };\n}\n\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',\n    'Access-Control-Allow-Headers': 'Content-Type'\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 460,
+        "wires": [
+            [
+                "http_response_cnpj"
+            ]
+        ]
+    },
+    {
+        "id": "http_response_cnpj",
+        "type": "http response",
+        "z": "27776b7daebce711",
+        "name": "JSON Response",
+        "statusCode": "",
+        "headers": {},
+        "x": 1190,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "http_in_cep",
+        "type": "http in",
+        "z": "27776b7daebce711",
+        "name": "GET /cep/:cep",
+        "url": "/cep/:cep",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 190,
+        "y": 500,
+        "wires": [
+            [
+                "function_preparar_url_cep"
+            ]
+        ]
+    },
+    {
+        "id": "function_preparar_url_cep",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Preparar URL CEP",
+        "func": "const cep = msg.req.params.cep;\n\nconst cepLimpo = cep.replace(/[^0-9]/g, '');\n\nmsg.url = `https://brasilapi.com.br/api/cep/v2/${cepLimpo}`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 500,
+        "wires": [
+            [
+                "http_request_api_cep"
+            ]
+        ]
+    },
+    {
+        "id": "http_request_api_cep",
+        "type": "http request",
+        "z": "27776b7daebce711",
+        "name": "BrazilAPI CEP V2",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 660,
+        "y": 500,
+        "wires": [
+            [
+                "function_formatar_cep"
+            ]
+        ]
+    },
+    {
+        "id": "function_formatar_cep",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Formatar Resposta CEP",
+        "func": "if (msg.statusCode !== 200) {\n    msg.payload = {\n        error: 'CEP não encontrado',\n        cep_buscado: msg.req.params.cep\n    };\n    msg.statusCode = 404;\n} else {\n    msg.statusCode = 200;\n}\n\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',\n    'Access-Control-Allow-Headers': 'Content-Type'\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 500,
+        "wires": [
+            [
+                "http_response_cep"
+            ]
+        ]
+    },
+    {
+        "id": "http_response_cep",
+        "type": "http response",
+        "z": "27776b7daebce711",
+        "name": "JSON Response CEP",
+        "statusCode": "",
+        "headers": {},
+        "x": 1150,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "http_in_salvar_cep",
+        "type": "http in",
+        "z": "27776b7daebce711",
+        "name": "POST /salvar-cep",
+        "url": "/salvar-cep",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 200,
+        "y": 540,
+        "wires": [
+            [
+                "function_preparar_sql"
+            ]
+        ]
+    },
+    {
+        "id": "postgres_insert",
+        "type": "postgresql",
+        "z": "27776b7daebce711",
+        "name": "PostgreSQL Insert",
+        "query": "INSERT INTO ceps_buscados (cep, street, neighborhood, city, state, latitude, longitude)  \nVALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "postgreSQLConfig": "ef188f5e536320e3",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 710,
+        "y": 540,
+        "wires": [
+            [
+                "function_formatar_resposta_salvar"
+            ]
+        ]
+    },
+    {
+        "id": "function_formatar_resposta_salvar",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Formatar Resposta",
+        "func": "node.warn('=== RESULTADO FINAL ===');\n\nnode.warn('Payload: ' + JSON.stringify(msg.payload, null, 2));\n\nif (msg.error) {\n    node.error('ERRO NO POSTGRES: ' + JSON.stringify(msg.error));\n    msg.statusCode = 500;\n    msg.payload = {\n        success: false,\n        error: 'Erro ao salvar no banco de dados',\n        details: msg.error\n    };\n} else {\n    node.warn('SUCESSO! Dados salvos.');\n    msg.statusCode = 201;\n    msg.payload = {\n        success: true,\n        message: 'CEP salvo com sucesso!',\n        data: msg.payload[0] || msg.payload\n    };\n}\n\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',\n    'Access-Control-Allow-Headers': 'Content-Type'\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 540,
+        "wires": [
+            [
+                "http_response_salvar"
+            ]
+        ]
+    },
+    {
+        "id": "http_response_salvar",
+        "type": "http response",
+        "z": "27776b7daebce711",
+        "name": "Response Salvar",
+        "statusCode": "",
+        "headers": {},
+        "x": 1180,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "function_preparar_sql",
+        "type": "function",
+        "z": "27776b7daebce711",
+        "name": "Preparar SQL Insert",
+        "func": "const dados = msg.payload;  \n\nmsg.params = [  \n    dados.cep || null,  \n    dados.street || null,  \n    dados.neighborhood || null,  \n    dados.city || null,  \n    dados.state || null,  \n    dados.location?.coordinates?.latitude || null,  \n    dados.location?.coordinates?.longitude || null  \n];  \n  \nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 540,
+        "wires": [
+            [
+                "postgres_insert"
+            ]
+        ]
+    },
+    {
+        "id": "ef188f5e536320e3",
+        "type": "postgreSQLConfig",
+        "name": "Cep",
+        "host": "127.0.0.1",
+        "hostFieldType": "str",
+        "port": 5432,
+        "portFieldType": "num",
+        "database": "cep",
+        "databaseFieldType": "str",
+        "ssl": "false",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": 10,
+        "maxFieldType": "num",
+        "idle": 1000,
+        "idleFieldType": "num",
+        "connectionTimeout": 10000,
+        "connectionTimeoutFieldType": "num",
+        "user": "postgres",
+        "userFieldType": "str",
+        "password": "root",
+        "passwordFieldType": "str"
+    },
+    {
+        "id": "8ba05c37b2ea88c8",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-postgresql": "0.15.4"
+        }
+    }
+]
