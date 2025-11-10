@@ -143,7 +143,6 @@ const DetalhesCep: React.FC = () => {
 
         <div className="space-y-6">
 
-          {/* Endereço Completo */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h3 className="text-lime-400 text-xl font-bold mb-4 flex items-center gap-2">
               🏠 Endereço Completo
@@ -203,7 +202,6 @@ const DetalhesCep: React.FC = () => {
           </div>
         </div>
 
-        {/* Botão Salvar no Banco */}
         <div className="bg-linear-to-br from-lime-950 to-zinc-900 border-2 border-lime-400 rounded-xl p-6 mt-3">
           <div className="flex items-center justify-between">
             <div>
